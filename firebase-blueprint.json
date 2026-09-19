@@ -1,0 +1,40 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Public profile and leaderboard stats for a user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\\\-]+$" },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "points": { "type": "number", "description": "Leaderboard points" },
+        "createdAt": { "type": "string", "description": "Timestamp" },
+        "updatedAt": { "type": "string", "description": "Timestamp" }
+      },
+      "required": ["uid", "points", "createdAt", "updatedAt"]
+    },
+    "TournamentState": {
+      "title": "TournamentState",
+      "description": "Saved tournament progress for a user.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\\\-]+$" },
+        "fixturesJson": { "type": "string", "maxLength": 1000000, "description": "Serialized string of all fixtures" },
+        "knockoutJson": { "type": "string", "maxLength": 1000000, "description": "Serialized string of knockout matches" },
+        "updatedAt": { "type": "string", "description": "Timestamp" }
+      },
+      "required": ["ownerId", "fixturesJson", "knockoutJson", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Public profiles and leaderboard points."
+    },
+    "/tournaments/{userId}": {
+      "schema": { "$ref": "#/entities/TournamentState" },
+      "description": "Saved tournament progress, restricted to the owner."
+    }
+  }
+}

@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} { allow read, write: if false; }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'points', 'createdAt', 'updatedAt']) &&
+             data.uid is string && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+             data.uid == request.auth.uid &&
+             data.points is number &&
+             data.createdAt == request.time &&
+             data.updatedAt == request.time &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100)) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500));
+    }
+    
+    function isValidUserProfileUpdate(data) {
+      return data.uid == request.auth.uid &&
+             data.points is number &&
+             data.updatedAt == request.time &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100)) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500));
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming());
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUserProfileUpdate(incoming()) && incoming().createdAt == existing().createdAt && incoming().uid == existing().uid && incoming().diff(existing()).affectedKeys().hasOnly(['points', 'displayName', 'photoURL', 'updatedAt']);
+    }
+
+    function isValidTournamentState(data) {
+      return data.keys().hasAll(['ownerId', 'fixturesJson', 'knockoutJson', 'updatedAt']) &&
+             data.ownerId is string && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+             data.ownerId == request.auth.uid &&
+             data.fixturesJson is string && data.fixturesJson.size() <= 1000000 &&
+             data.knockoutJson is string && data.knockoutJson.size() <= 1000000 &&
+             data.updatedAt == request.time;
+    }
+    
+    function isValidTournamentStateUpdate(data) {
+      return data.ownerId == request.auth.uid &&
+             data.fixturesJson is string && data.fixturesJson.size() <= 1000000 &&
+             data.knockoutJson is string && data.knockoutJson.size() <= 1000000 &&
+             data.updatedAt == request.time;
+    }
+
+    match /tournaments/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(userId) && isValidTournamentState(incoming());
+      allow update: if isOwner(userId) && isValidId(userId) && isValidTournamentStateUpdate(incoming()) && incoming().ownerId == existing().ownerId && incoming().diff(existing()).affectedKeys().hasOnly(['fixturesJson', 'knockoutJson', 'updatedAt']);
+    }
+  }
+}

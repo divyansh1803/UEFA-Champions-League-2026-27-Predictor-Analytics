@@ -1,0 +1,6 @@
+{
+  "name": "UEFA Champions League 2026-27 Predictor",
+  "description": "The ultimate EA FC 27 and Sofascore inspired UEFA Champions League 2026-27 36-team tournament predictor, live match simulator, and knockout bracket.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
